@@ -1,0 +1,9 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+first:
+  id: 1
+  last_name: Flanders
+  first_name: Maude
+second:
+  id: 2
+  last_name: Griffin
+  first_name: Lois

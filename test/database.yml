@@ -1,0 +1,12 @@
+mysql:
+  :adapter: mysql
+  :database: plugin_test
+  :user: root
+  :password:
+
+mssql:
+  adapter: sqlserver
+  database: plugin_test
+  username: remax_user
+  password: password
+  host: localhost

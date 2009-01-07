@@ -1,0 +1,69 @@
+ActsAsAuditableRecord
+=====================
+Provides the ability to create custom reports to changes to in an object's attributes.
+
+Options: 
+# declaring the plugin with no options will report differences in all attributes without custom formatting or custom labels
+acts_as_auditable_record
+
+# report differences in all the attributes listed specifying a custom message for one.
+my_format_proc = Proc.new{Proc.new {|a, b| "Sirname changed to #{b}"}}
+acts_as_auditable_record :all=>[:last_name => {:message_proc=>my_format_proc}]
+#>> ["Sirname changed to Flanders.","First name changed from: Homer to: Ned."]
+
+# report differences in all the attributes listed with an attribute discriptor change for one.
+acts_as_auditable_record :all=>[:last_name=>{:descriptor=>"Sirname"}]
+#>> ["Sirname changed from Simpson to Flanders.","First name changed from: Homer to: Ned."]
+
+# report differences in only the attributes listed.
+acts_as_auditable_record :only=>[:last_name=>{}]
+#>> ["Last name changed from: Simpson to: Flanders."]
+
+# report differences in only the attributes listed and specifying formatting for some -- one of which formats an association.
+acts_as_auditable_record :only=>[:last_name=>{:descriptor=>"Sirname"}, :show_id=>{:format_proc=>Proc.new{|p| Show.find(p).name}}]
+#>> ["Sirname changed from: Simpson to: Flanders.", "Show changed from: The Simpsons to: The Family Guy."]
+
+# report differences in all the attributes except some.
+acts_as_auditable_record :all=>[:last_name => {:message_proc=>Proc.new{Proc.new {|a, b| "Sirname changed to #{b}"}}}],
+                         :except=>[:first_name, :some_other_attr]       
+#>> ["Sirname changed to Flanders."]
+
+# includes the "name" and "ordered_at" attributes and formats the date to mm/dd/yyyy.
+:only=>[:name, :ordered_at=>{:format_proc=>Proc.new{|x| x.strftime('%m/%d/%Y')}}]
+#>> "Name changed from: Peter to: Chris" "Ordered_at changed to: 1/1/2007"
+
+# use a comparison proc for an attribute -- this is useful when comparing dates where one may be utc and the other is not. This is its only known uses.
+compare_proc = Proc.new{|a,b| a.strftime('%m/%d/%y') != b.strftime('%m/%d/%y')}
+format_proc = Proc.new{|d| d.strftime('%m/%d/%y')}
+acts_as_auditable_record :all => [:renewed_at=>{:format_proc=>format_proc, :compare_proc=>compare_proc, :descriptor=>"Renewed Date"}]
+#>> ["Renewed Date changed from: 08/10/08 to: 10/10/08", "AnotherAttr changed from: this to: that."]
+
+Notes:
+
+The methods in the plugin are called before the object is updated and a report is generated and accessed by in the audit_report attribute:
+
+Example:
+
+acts_as_auditable_record :only=>[:name=>{:descriptor=>"Client Name}]
+
+record = ARRecord.find(1)
+#>> #<ARRecord:0x3362560 blah.. blah..>
+record.name
+#>> "Peter"
+record.name = "Chris"
+#>> "Chris"
+record.save
+#>> true
+record.audit_report
+#>> "Client Name changed from: Peter to: Chris"
+
+It's up to the user to do with what they want with this report.  Perhaps the after_save would save it to another table etc. 
+i.e.:
+
+after_save :save_audit_report
+def save_audit_report
+    ARRecordAudit.new(self.audit_report) unless audit_report.blank?
+end
+# It would be up to the associated audit model to save the user's id if that's desired.  The plugin merely reports the differences and not who committed them.
+
+
